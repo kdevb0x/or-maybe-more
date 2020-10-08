@@ -2,43 +2,46 @@ package main
 
 import (
 	"html/template"
-	"net/http"
-	"crypto/tls"
-	"log"
 	"io"
-	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
 
+	"github.com/gorilla/mux"
 )
 
-type errorLogger struct {
-	output io.Writer 
+// errlog is the shared error logger for printing errors from multiple goroutines.
+var errlog chan error
+
+// raiseError print err to stderr may called from any goroutine.
+func raiseError(err error, severity errSeverity) {
+	errlog <- err
 }
 
-func (elog *errorLogger) start(output io.Writer) {
-	elog.output = output 
+type errorLogger struct {
+	out io.Writer
+}
+
+func (elog *errorLogger) start(out io.Writer) {
+	elog.out = out
 	for {
-		_, err := elog.output.Write([]byte(<-errlog.Error()))
+		_, err := elog.out.Write([]byte(<-errlog))
 		if err != nil {
 			log.Fatalf("errorLogger encountered error: %w\n", err)
 		}
 	}
 }
 
-type errSeverity int 
+type errSeverity int
+
 const (
-	debug errSeverity = iota
-	info
-	fatal
+	DEBUG errSeverity = iota
+	INFO
+	ERROR
+	FATAL
 )
 
-// errlog is the shared error logger for printing errors from multiple goroutines.
-var errlog chan error 
-
-// raiseError print err to stderr may called from any goroutine.
-func raiseError(err error, severity errSeverity) {
-	err -> errlog
-}
-var server server
+var Server = new(server)
 
 type server struct {
 	http.Server
@@ -48,8 +51,23 @@ type server struct {
 func (s *server) updateHTML(htmlFile string) {
 	t, err := template.ParseFiles(htmlFile)
 	if err != nil {
-		raiseError(err)
+		raiseError(err, ERROR)
 	}
+	fname := "./www/index.html"
+	f, err := os.Create(fname)
+	if err != nil {
+		raiseError(err, ERROR)
+	}
+	if err := t.Execute(f, nil); err != nil {
+		raiseError(err, ERROR)
+	}
+}
+
+func (s *server) serve(url string) {
+	r := mux.NewRouter()
+	sub := r.Host("www.ormaybemore.com").Subrouter()
+	sub.Handle("/", http.FileServer(http.Dir("./www")))
+
 }
 
 func main() {
@@ -59,5 +77,6 @@ func main() {
 	// start processing loop
 	go errlogger.start(os.Stderr)
 
-	server.updateHTML("index.html")
+	Server.updateHTML("index.gohtml")
+	Server.serve(":80")
 }
