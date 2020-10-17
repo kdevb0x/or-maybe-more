@@ -1,4 +1,4 @@
-package main
+package page
 
 import (
 	"fmt"
@@ -6,38 +6,38 @@ import (
 	"log"
 )
 
-type errSeverity int
+type ErrSeverity int
 
 const (
 	NONE              = -1
-	DEBUG errSeverity = iota
+	DEBUG ErrSeverity = iota
 	ERROR
 	FATAL
 	INFO
 )
 
-// taggedErr implements the error interface, and holds severity info for the logger as well as the error.
-type taggedErr struct {
+// TaggedErr implements the error interface, and holds severity info for the logger as well as the error.
+type TaggedErr struct {
 	err      error
-	severity errSeverity
+	severity ErrSeverity
 }
 
-func tagErr(err error, severity errSeverity) taggedErr {
-	return taggedErr{err, severity}
+func TagErr(err error, severity ErrSeverity) TaggedErr {
+	return TaggedErr{err, severity}
 }
 
 // Implements error interface.
-func (te *taggedErr) Error() string {
+func (te *TaggedErr) Error() string {
 	return te.err.Error()
 }
 
 // errlog is the shared error logger for printing errors from multiple goroutines.
-var errlog chan taggedErr
+var errlog chan TaggedErr
 
 // throw print err to stderr may called from any goroutine.
 // If severity is nil, ERROR is assumed.
-func throw(err error, severity ...errSeverity) {
-	var tag taggedErr
+func throw(err error, severity ...ErrSeverity) {
+	var tag TaggedErr
 	if severity != nil {
 		tag = tagErr(err, severity[0])
 	}

@@ -1,6 +1,10 @@
-package main
+// +import "github.com/kdevb0x/or-maybe-more/src/page"
+package page
 
 import (
+	"context"
+	"database/sql/driver"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -10,6 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v4"
 )
 
 var (
@@ -23,15 +28,15 @@ var (
 	devkey  string
 )
 
-var Server = new(server)
+var DefaultServer = new(Server)
 
-type server struct {
+type Server struct {
 	http.Server
-	active bool
+	Active bool
 }
 
 // updateHTML updates <htmlFile>.html by parsing the template name <htmlFile>.gohtml.
-func (s *server) updateHTML(htmlfile string) error {
+func (s *Server) UpdateHTML(htmlfile string) error {
 	info, err := os.Stat(htmlfile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -42,7 +47,7 @@ func (s *server) updateHTML(htmlfile string) error {
 	if err != nil {
 		throw(err, ERROR)
 	}
-	if wwwdir := os.Getenv("OMM_WWW_DIR"); wwwdir != "" {
+	if wwwdir := os.Getenv("OMM_WWW_DIR"); wwwdir != "" && StaticAssetDir == "" {
 		StaticAssetDir = wwwdir
 	}
 
@@ -59,22 +64,60 @@ func (s *server) updateHTML(htmlfile string) error {
 	return nil
 }
 
-func (s *server) serve(addr string) {
+func ContactFormHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		throw(err, ERROR)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+}
+
+func (s *Server) Serve(addr string) {
 	r := mux.NewRouter()
 	sub := r.Host("www.ormaybemore.com").Subrouter()
 	sub.Handle("/", http.FileServer(http.Dir(filepath.Join(StaticAssetDir, "www"))))
 	s.Handler = r
-	s.active = true
+	s.Active = true
 	log.Fatal(s.ListenAndServeTLS(devcert, devkey))
 }
 
-func main() {
-	errlog = make(chan taggedErr, 3)
-	errlogger := new(errorLogger)
+// ContactInfo holds contact info submitted by a user to receive project
+// announcments.
+type ContactInfo struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name,omitempty"`
+	Tel       string `json:"telephone,omitempty"`
+	Methods   ContactMethod
+	Emails    []string `json:"email"`
+}
 
-	// start processing loop
-	go errlogger.run(os.Stderr)
+func (ci *ContactInfo) Value() (driver.Value, error) {
+	return json.Marshal(ci)
+}
 
-	Server.updateHTML("index.gohtml")
-	Server.serve(":8080")
+func (ci *ContactInfo) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion of value to []byte failed")
+	}
+	return json.Unmarshal(b, &ci)
+}
+
+type ContactMethod uint
+
+const (
+	Text ContactMethod = 1 << iota
+	Call
+	Email
+	// aka snailmail
+	Letter
+)
+
+func addEmail(addr string, info ContactInfo) error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("POSTGRES_URL"))
+	if err != nil {
+		return err
+	}
+	defer conn.Close(context.Background())
+	var info = ContactInfo
 }
