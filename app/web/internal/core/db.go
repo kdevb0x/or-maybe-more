@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"database/sql"
 
-	_ "github.com/mattn/go-splite3"
+	_ "modernc.org/sqlite"
 )
 
 type DBConn sql.DB
@@ -15,4 +15,7 @@ type DBAuthToken struct {
 
 func OpenDB(dbpath string, auth DBAuthToken) (*DBConn, error) {
 	h, err := sql.Open("sqlite3", "file::memory:?mode=memory&cache=shared")
+	if err != nil {
+		return nil, err
+	}
 }
