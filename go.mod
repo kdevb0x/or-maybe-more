@@ -11,4 +11,5 @@ require (
 	github.com/pion/webrtc/v2 v2.2.26 // indirect
 	github.com/pion/webrtc/v3 v3.0.0-beta.8
 	golang.org/x/tools/gopls v0.5.1 // indirect
+	modernc.org/sqlite v1.7.4
 )
