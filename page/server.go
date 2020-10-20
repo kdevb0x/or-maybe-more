@@ -72,6 +72,22 @@ func ContactFormHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func NotificationFormHandler(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		throw(err, ERROR)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	e := r.Form.Get("email")
+	if e != "" {
+		err := addEmail(r.Context(), e, ContactInfo{})
+		if err != nil {
+			throw(err, ERROR)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+	}
+}
+
 func (s *Server) Serve(addr string) {
 	r := mux.NewRouter()
 	sub := r.Host("www.ormaybemore.com").Subrouter()
@@ -113,11 +129,42 @@ const (
 	Letter
 )
 
-func addEmail(addr string, info ContactInfo) error {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("POSTGRES_URL"))
+func addEmail(ctx context.Context, email string, info ContactInfo) error {
+	var cancelCtx, cancelFn = context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			cancelFn()
+		case <-done:
+			return
+		}
+	}()
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		return err
 	}
 	defer conn.Close(context.Background())
-	var info = ContactInfo
+
+	tx, err := conn.Begin(cancelCtx)
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(ctx, "add_email_addr", `INSERT ? INTO TABLE "notification_list" (IF NOT EXIST).($1)`)
+	if err != nil {
+		return err
+	}
+	defer conn.Deallocate(context.Background(), "add_email_addr")
+	cmd, err := tx.Query(cancelCtx, stmt.SQL, email)
+	if err != nil {
+		log.Printf(err.Error())
+		return err
+	}
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+	cmd.Close()
+	done <- struct{}{}
+	return nil
+
 }
