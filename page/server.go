@@ -3,8 +3,6 @@ package page
 
 import (
 	"context"
-	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -12,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4"
@@ -97,39 +96,41 @@ func (s *Server) Serve(addr string) {
 	log.Fatal(s.ListenAndServeTLS(devcert, devkey))
 }
 
-// ContactInfo holds contact info submitted by a user to receive project
-// announcments.
-type ContactInfo struct {
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name,omitempty"`
-	Tel       string `json:"telephone,omitempty"`
-	Methods   ContactMethod
-	Emails    []string `json:"email"`
+type NotificationListRow struct {
+	EmailAddr string    `json:"email_addr"`
+	Joined    time.Time `json:"joined,omitempty"`
 }
 
-func (ci *ContactInfo) Value() (driver.Value, error) {
-	return json.Marshal(ci)
-}
-
-func (ci *ContactInfo) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion of value to []byte failed")
+func dbCreateNotificationListTable() error {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
 	}
-	return json.Unmarshal(b, &ci)
+	defer conn.Close(context.Background())
+
+	tx, err := conn.Begin(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(nil)
+
+	_, err = tx.Prepare(context.TODO(), "make_notifaction_list",
+		`CREATE TABLE notification_list(
+		email_addr VARCHAR,
+		joined DATE
+	) IF NOT EXIST;`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(context.Background(), "make_notifaction_list")
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-type ContactMethod uint
-
-const (
-	Text ContactMethod = 1 << iota
-	Call
-	Email
-	// aka snailmail
-	Letter
-)
-
-func addEmail(ctx context.Context, email string, info ContactInfo) error {
+func addEmail(ctx context.Context, email string) error {
 	var cancelCtx, cancelFn = context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
@@ -150,7 +151,9 @@ func addEmail(ctx context.Context, email string, info ContactInfo) error {
 	if err != nil {
 		return err
 	}
-	stmt, err := tx.Prepare(ctx, "add_email_addr", `INSERT ? INTO TABLE "notification_list" (IF NOT EXIST).($1)`)
+	stmt, err := tx.Prepare(ctx, "add_email_addr",
+		// TODO
+		``)
 	if err != nil {
 		return err
 	}

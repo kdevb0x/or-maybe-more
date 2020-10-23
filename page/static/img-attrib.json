@@ -1,0 +1,20 @@
+{
+  "description": "Attribution credit for images (image name as used in the content)", 
+  "intro_slider": [
+    {
+      "1.jpg": "Photo by <a href='https://unsplash.com/@brookecagle'>Brooke Cagle</a> on <a href='https://unsplash.com'>Unsplash</a>"
+    },
+    {
+      "2.jpg": "Photo by <a href='https://unsplash.com/@cookiethepom'> Cookie the Pom</a> on <a href='https://unsplash.com'>Unsplash</a>"
+    },
+    {
+      "3.jpg": "Photo by <a href='https://unsplash.com/@neringa'>Ga</a> on <a href='https://unsplash.com'>Unsplash</a>"
+    },
+    {
+      "4.jpg": "Photo by <a href='https://unsplash.com/@mlightbody'>Malcolm Lightbody</a> on <a href='https://unsplash.com'>Unsplash</a>"
+    },
+    {
+      "5.jpg": "Photo by <a href='https://unsplash.com/@tevintrinh'>Tevin Trinh</a> on <a href='https://unsplash.com'>Unsplash</a>"
+    }
+  ]
+}
