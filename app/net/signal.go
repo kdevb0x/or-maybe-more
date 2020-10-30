@@ -1,4 +1,4 @@
-package app
+package net
 
 import (
 	rtc "github.com/pion/webrtc/v3"
