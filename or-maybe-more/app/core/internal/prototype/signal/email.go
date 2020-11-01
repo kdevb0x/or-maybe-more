@@ -32,3 +32,7 @@ func timeOp(op func()) time.Duration {
 	return start.Sub(time.Now())
 
 }
+
+func byEmail(ctx context.Context, emailaddr string) {
+
+}
