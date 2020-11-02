@@ -12,20 +12,56 @@ import (
 	"github.com/saracen/go7z"
 )
 
-var archiveName string
+var archivePass string
 
-func openSecretsArchive(path string) (files []string, ok bool) {
+type secrets struct {
+	files []string
+	vars  []string
+}
+
+func (s *secrets) openSecretsArchive(path string) error {
+	f, err := openSecretsArchive(path)
+	if err != nil {
+		return err
+	}
+	s.files = f
+	return nil
+}
+
+// creates env vars using s.files, deleting the file afterwards if rmFiles is
+// set to true.
+func (s *secrets) createVars(rmFiles bool) error {
+	for _, f := range s.files {
+		val, err := ioutil.ReadFile(f)
+		if err != nil {
+			return err
+		}
+		if err := os.Setenv(strings.ToUpper(strings.Split(f, ".")[0]), strings.Split(string(val), "\n")[0]); err != nil {
+			return err
+		}
+
+		if rmFiles {
+			if err := os.Remove(f); err != nil {
+				return fmt.Errorf("unable to remove %s: %w\n", f, err)
+			}
+		}
+	}
+	return nil
+}
+
+func openSecretsArchive(path string) (files []string, err error) {
 	h, err := go7z.OpenReader(path)
 	if err != nil {
 		log.Println(fmt.Errorf("cant open secrets archive: %w\n", err))
-		return nil, false
+		return nil, err
 	}
 	defer h.Close()
-	var pwprompt string = os.Getenv(archiveName)
-	if pwprompt == "" {
+	var pwprompt string = os.Getenv(archivePass)
+
+	// loop until the user gives us something
+	for pwprompt == "" {
 		_, fn := filepath.Split(path)
-		fname := strings.Split(fn, filepath.Ext(fn))[0]
-		fmt.Printf("enter password for %s:\n", fname)
+		fmt.Printf("enter password for %s:\n", fn)
 		fmt.Scanln(&pwprompt)
 	}
 	h.Options.SetPassword(pwprompt)
@@ -36,14 +72,14 @@ func openSecretsArchive(path string) (files []string, ok bool) {
 			break // End of archive
 		}
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		// If empty stream (no contents) and isn't specifically an empty file...
 		// then it's a directory.
 		if hdr.IsEmptyStream && !hdr.IsEmptyFile {
 			if err := os.MkdirAll(hdr.Name, os.ModePerm); err != nil {
-				panic(err)
+				return nil, err
 			}
 			continue
 		}
@@ -51,33 +87,19 @@ func openSecretsArchive(path string) (files []string, ok bool) {
 		// Create file
 		f, err := os.Create(hdr.Name)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		defer f.Close()
 
 		if _, err := io.Copy(f, h); err != nil {
-			panic(err)
+			return nil, err
 		}
 
-		files = append(files, hdr.Name)
+		files = append(files, f.Name())
 	}
-
-	return files, true
+	return files, nil
 }
 
-func createVarsAndRm(files []string) error {
-	for _, f := range files {
-		val, err := ioutil.ReadFile(f)
-		if err != nil {
-			return err
-		}
-		if err := os.Setenv(strings.ToUpper(strings.Split(f, ".")[0]), strings.Split(string(val), "\n")[0]); err != nil {
-			return err
-		}
-
-		if err := os.Remove(f); err != nil {
-			return err
-		}
-	}
-	return nil
+func main() {
+	archivePass = "OOM_SECRETS_AR_PASS"
 }
