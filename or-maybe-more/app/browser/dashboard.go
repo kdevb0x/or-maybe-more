@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"github.com/kdevb0x/or-maybe-more/app"
+	"github.com/kdevb0x/or-maybe-more/or-maybe-more/app"
 	"github.com/maxence-charriere/app/pkg/app"
 )
 

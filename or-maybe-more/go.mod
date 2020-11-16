@@ -12,9 +12,9 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jackc/pgx/v4 v4.9.2
-	github.com/kdevb0x/quikface v0.0.0-20200425195316-e5ecada61069
+	github.com/kdevb0x/quikface v0.0.0-20200425195316-e5ecada61069 // indirect
 	github.com/maxence-charriere/app v1.3.6
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pion/sdp v1.3.0
@@ -26,7 +26,7 @@ require (
 	github.com/stretchr/objx v0.3.0
 	github.com/ulikunitz/xz v0.5.8 // indirect
 	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	gopkg.in/gorethink/gorethink.v4 v4.1.0 // indirect
 	modernc.org/sqlite v1.7.4
 )
