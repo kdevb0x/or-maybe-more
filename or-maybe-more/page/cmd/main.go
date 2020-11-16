@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/kdevb0x/or-maybe-more/page"
+	"../../page"
 )
 
 func main() {

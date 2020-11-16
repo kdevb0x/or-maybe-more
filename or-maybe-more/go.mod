@@ -1,4 +1,4 @@
-module or-maybe-more
+module github.com/kdevb0x/or-maybe-more/or-maybe-more
 
 go 1.15
 
@@ -25,7 +25,7 @@ require (
 	github.com/stretchr/gomniauth v0.0.0-20170717123514-4b6c822be2eb
 	github.com/stretchr/objx v0.3.0
 	github.com/ulikunitz/xz v0.5.8 // indirect
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
 	gopkg.in/gorethink/gorethink.v4 v4.1.0 // indirect
 	modernc.org/sqlite v1.7.4
