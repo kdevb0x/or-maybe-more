@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/stretchr/objx"
 	"golang.org/x/crypto/nacl/auth"
 )
 
@@ -13,6 +12,7 @@ type ClientID struct {
 	dna         ed25519.PrivateKey
 	displayName string
 	key         ed25519.PublicKey
+	OAuthData   *OAuthUserData
 }
 
 // An ClientID is constructed by initializing its DNA.
@@ -103,11 +103,3 @@ func (mq *MetadataQuery) Fetch(m MetadataQuery) int {
 // BaseMetadataQuery is the most basic MetadataQuery, which contains only "last_seen",
 // and "display_name".
 var BaseMetadataQuery = MetadataQuery{"last_seen": "", "display_name": ""}
-
-type oauthData struct {
-	Client *Client
-
-	// auth data from provider
-	authobj   objx.Map
-	hasCookie bool
-}

@@ -1,24 +1,51 @@
 package app
 
 import (
-	"crypto/rand"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
 	"github.com/stretchr/gomniauth"
-	"github.com/stretchr/gomniauth/providers/facebook"
-	"github.com/stretchr/gomniauth/providers/github"
-	"github.com/stretchr/gomniauth/providers/google"
 	"github.com/stretchr/objx"
-	"golang.org/x/crypto/nacl/sign"
+
+	_ "github.com/markbates/goth/providers/facebook"
+	"github.com/markbates/goth/providers/google"
+	_ "github.com/markbates/goth/providers/instagram"
+	_ "github.com/markbates/goth/providers/twitter"
 )
 
-type oauthData struct {
-	Client *Client
+var _ = gothic.SessionName
 
-	// auth data from provider
-	authobj   objx.Map
-	hasCookie bool
+var ServerRootURL string
+
+func initGoth() {
+	goth.UseProviders(google.New(os.Getenv("OMM_GOOGLE_OAUTH_KEY"), os.Getenv("OMM_GOOGLE_OAUTH_SECRET"), fmt.Sprintf("%s", ServerRootURL)))
+
+	m := make(map[string]string)
+	m["google"] = "Google"
+
+	var keys []string
+
+}
+
+// oauth data from provider
+type OAuthUserData struct {
+	logoutURL string
+	Provider  string
+	// FirstName and LastName
+	Name         [2]string
+	Email        string
+	NickName     string
+	Location     string
+	AvatarURL    string
+	Description  string
+	UserID       string
+	AccessToken  string
+	ExpiresAt    string
+	RefreshToken string
 }
 
 type authHandler struct {
@@ -26,37 +53,23 @@ type authHandler struct {
 }
 
 func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if _, err := r.Cookie("auth"); err == http.ErrNoCookie {
+	if c, err := r.Cookie("auth"); err == http.ErrNoCookie {
 		// not authenticated
 		w.Header().Set("Location", "/login")
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else if err != nil {
 		// some other error
 	} else {
-		// successful auth
+		if token := c.Value; token != "" {
+			println(fmt.Printf("auth cookie token : %s\n", token))
+		}
+		// previous successful auth
 		h.next.ServeHTTP(w, r)
 	}
 }
 
 func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
-}
-
-func initOmniauth() {
-	// gomniauth.SetSecurityKey(/* TODO: add base64 encoded crypto key */)
-	publicKey, privateKey, err := sign.GenerateKey(rand.Reader)
-	if err != nil {
-
-	}
-	gomniauth.SetSecurityKey(string(privateKey[:]))
-	gomniauth.WithProviders(
-		facebook.New("key", "secret",
-			"http://localhost:8080/auth/callback/facebook"),
-		github.New("key", "secret",
-			"http://localhost:8080/auth/callback/github"),
-		google.New("key", "secret",
-			"http://localhost:8080/auth/callback/google"),
-	)
 }
 
 func authReqHandler(w http.ResponseWriter, r *http.Request, authchan ...chan authdata) {
