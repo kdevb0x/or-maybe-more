@@ -77,7 +77,37 @@ type Metadata interface {
 	// Fetch ranges over m filling in the values of every key present,
 	// returning the total number of changes made.
 	Fetch(m MetadataQuery) (n int, err error)
+
+	// Compare compares metadata to f
+	Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, error)
 }
+
+// QueryCompareMode defines the mode of operation when comparing Metadata to a MetadataQuery.
+type QueryCompareMode int
+const (
+	// This is the same as a no-op
+	DoNothing QueryCompareMode = iota
+
+	// If a keys value inside of a MetadataQuery differs from its present
+	// value in Metadata, update it to the new value.
+	UpdateChanges
+
+	// If a key present in a MetadataQuery (even when unset) is contained in
+	// the Metadata, delete it, and it's value if set, from the Metadata.
+	DeleteMatches
+
+	// Delete every key and its associated value not present in the
+	// MetadataQuery from the Metadata.
+	DeleteIfNotPresent
+
+	// If a key present in a MetadataQuery is contained in the Metadata,
+	// copy its over its value
+	CopyTo
+
+	// If a key and value present in a MetadataQuery is not contained in the Metadata, copy it over.
+	CopyFrom
+
+)
 
 // MetadataQuery is used to query, and fetch Client Metadata.
 type MetadataQuery map[string]interface{}
@@ -100,6 +130,19 @@ func (mq *MetadataQuery) Fetch(m MetadataQuery) int {
 	return cnt
 }
 
+// Compare compares the data contained in mq to m according to the comparison
+// mode kind.
+func (mq *MetadataQuery) Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, error) {
+	for k, v := range m {
+		switch kind {
+		case CopyFrom:
+			if _, ok := mq[k]; !ok {
+				mq[k] = v
+			}
+		// TODO: ended here 12/2/2020
+		}
+	}
+}
 // BaseMetadataQuery is the most basic MetadataQuery, which contains only "last_seen",
 // and "display_name".
 var BaseMetadataQuery = MetadataQuery{"last_seen": "", "display_name": ""}
