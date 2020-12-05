@@ -8,9 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
-	"github.com/stretchr/gomniauth"
-	"github.com/stretchr/objx"
-
+	
 	_ "github.com/markbates/goth/providers/facebook"
 	"github.com/markbates/goth/providers/google"
 	_ "github.com/markbates/goth/providers/instagram"
@@ -71,7 +69,7 @@ func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
 }
-
+/*
 func authReqHandler(w http.ResponseWriter, r *http.Request, authchan ...chan authdata) {
 	// format auth/{action}/{provider}
 
@@ -121,3 +119,4 @@ func authReqHandler(w http.ResponseWriter, r *http.Request, authchan ...chan aut
 	}
 
 }
+*/
