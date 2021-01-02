@@ -2,11 +2,15 @@ package app
 
 import (
 	"crypto/ed25519"
+	"crypto/sha512"
 	"errors"
 	"fmt"
+	"io"
 
 	"golang.org/x/crypto/nacl/auth"
 )
+
+type HashString string
 
 type ClientID struct {
 	dna         ed25519.PrivateKey
@@ -45,6 +49,10 @@ func (id *ClientID) Sign(msg []byte) (sig []byte, err error) {
 	return ed25519.Sign(id.dna, msg), nil
 }
 
+func (id *ClientID) String() string {
+	sha := sha512.New()
+}
+
 // Converts b[:31] to a 32 byte array pointer.
 func bptr(b []byte) *[32]byte {
 	var s *[32]byte
@@ -62,9 +70,10 @@ func privKeyToBPtr(k ed25519.PrivateKey) *[32]byte {
 
 // Client represents a user.
 type Client struct {
-	ipaddr   string
-	Metadata Metadata
-	id       *ClientID
+	ipaddr    string
+	Metadata  Metadata
+	id        *ClientID
+	Signaling io.ReadWriter
 }
 
 // Metadata is collected from Clients, and used to help derive possible
@@ -79,11 +88,12 @@ type Metadata interface {
 	Fetch(m MetadataQuery) (n int, err error)
 
 	// Compare compares metadata to f
-	Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, error)
+	Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, err error)
 }
 
 // QueryCompareMode defines the mode of operation when comparing Metadata to a MetadataQuery.
 type QueryCompareMode int
+
 const (
 	// This is the same as a no-op
 	DoNothing QueryCompareMode = iota
@@ -106,7 +116,6 @@ const (
 
 	// If a key and value present in a MetadataQuery is not contained in the Metadata, copy it over.
 	CopyFrom
-
 )
 
 // MetadataQuery is used to query, and fetch Client Metadata.
@@ -132,17 +141,18 @@ func (mq *MetadataQuery) Fetch(m MetadataQuery) int {
 
 // Compare compares the data contained in mq to m according to the comparison
 // mode kind.
-func (mq *MetadataQuery) Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, error) {
+func (mq *MetadataQuery) Compare(m MetadataQuery, kind QueryCompareMode) (result MetadataQuery, err error) {
 	for k, v := range m {
 		switch kind {
 		case CopyFrom:
 			if _, ok := mq[k]; !ok {
 				mq[k] = v
 			}
-		// TODO: ended here 12/2/2020
+			// TODO: ended here 12/2/2020
 		}
 	}
 }
+
 // BaseMetadataQuery is the most basic MetadataQuery, which contains only "last_seen",
 // and "display_name".
 var BaseMetadataQuery = MetadataQuery{"last_seen": "", "display_name": ""}

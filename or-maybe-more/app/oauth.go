@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 
-	"github.com/gorilla/mux"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
-	
-	_ "github.com/markbates/goth/providers/facebook"
+
+	"github.com/markbates/goth/providers/facebook"
 	"github.com/markbates/goth/providers/google"
 	_ "github.com/markbates/goth/providers/instagram"
 	_ "github.com/markbates/goth/providers/twitter"
@@ -20,12 +20,25 @@ var _ = gothic.SessionName
 var ServerRootURL string
 
 func initGoth() {
-	goth.UseProviders(google.New(os.Getenv("OMM_GOOGLE_OAUTH_KEY"), os.Getenv("OMM_GOOGLE_OAUTH_SECRET"), fmt.Sprintf("%s", ServerRootURL)))
+	goth.UseProviders(google.New(os.Getenv("OMM_GOOGLE_OAUTH_KEY"), os.Getenv("OMM_GOOGLE_OAUTH_SECRET"), fmt.Sprintf("%s/auth/google/callback", ServerRootURL)),
+		facebook.New(os.Getenv("FACEBOOK_KEY"), os.Getenv("FACEBOOK_SECRET"), "http://localhost:3000/auth/facebook/callback"))
 
+	// instagram.New(os.Getenv("INSTAGRAM_KEY"), os.Getenv("INSTAGRAM_SECRET"), "http://localhost:3000/auth/instagram/callback"),
+	// apple.New(os.Getenv("APPLE_KEY"), os.Getenv("APPLE_SECRET"), "http://localhost:3000/auth/apple/callback", nil, apple.ScopeName, apple.ScopeEmail),
 	m := make(map[string]string)
 	m["google"] = "Google"
+	m["facebook"] = "Facebook"
+
+	// m["instagram"] = "Instagram"
+	// m["apple"] = "Apple"
 
 	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	providerIDX
 
 }
 
@@ -69,6 +82,7 @@ func (h *authHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func MustAuth(handler http.Handler) http.Handler {
 	return &authHandler{next: handler}
 }
+
 /*
 func authReqHandler(w http.ResponseWriter, r *http.Request, authchan ...chan authdata) {
 	// format auth/{action}/{provider}
@@ -92,8 +106,6 @@ func authReqHandler(w http.ResponseWriter, r *http.Request, authchan ...chan aut
 		}
 		creds, err := pvdr.CompleteAuth(objx.MustFromURLQuery(r.URL.RawQuery))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		}
 		user, err := pvdr.GetUser(creds)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

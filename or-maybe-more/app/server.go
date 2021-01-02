@@ -1,6 +1,7 @@
 package app
 
 import (
+	"io"
 	"net"
 	"os"
 
@@ -27,3 +28,16 @@ func (cl *connListener) Close() error {
 }
 
 type LocationInfo = node.LocInfo
+
+// Transport is an abstract net.Conn supporting our custom protocols.
+type Transport interface {
+	net.Conn
+}
+
+type netchanTransport struct {
+	local, remote io.ReadWriteCloser
+}
+
+func (t *transport) Write(p []byte) (int, error) {
+	return t.remote.Write(p)
+}
