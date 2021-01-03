@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/GoRethink/gorethink v4.0.0+incompatible
+	github.com/ajstarks/svgo v0.0.0-20200725142600-7a3c8b57fecb // indirect
 	github.com/awnumar/memguard v0.22.2
 	github.com/bitly/go-hostpool v0.1.0 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
