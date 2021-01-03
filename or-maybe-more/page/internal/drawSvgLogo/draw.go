@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ajstarks/svgo/svg"
+	"github.com/ajstarks/svgo"
 )
 
 // Logo is an logo created using Standard Vector Graphics (via svgo)
